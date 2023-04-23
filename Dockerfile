@@ -3,7 +3,7 @@ ARG EASY_NOVNC_IMAGE="fhriley/easy-novnc:1.3.0"
 
 FROM $EASY_NOVNC_IMAGE as easy-novnc
 FROM $BASE_IMAGE as build
-
+FROM linuxserver/ffmpeg
 ARG DEBIAN_FRONTEND="noninteractive"
 
 RUN apt-get update -y \
@@ -108,6 +108,24 @@ RUN apt-get update -y \
     zlib1g-dev \
   && rm -rf /var/lib/apt/lists
 
+RUN cd /usr/src && \
+    git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg \
+    cd ffmpeg \
+    ./configure --enable-shared --disable-static --prefix=/usr/ \
+    make -j$(nproc) \
+    make install \
+    sh -c 'echo "prefix=/usr" > /usr/lib/pkgconfig/ffmpeg.pc' \
+    sh -c 'echo "libdir=\${prefix}/lib" >> /usr/lib/pkgconfig/ffmpeg.pc' \
+    sh -c 'echo "includedir=\${prefix}/include" >> /usr/lib/pkgconfig/ffmpeg.pc' \
+    sh -c 'echo "" >> /usr/lib/pkgconfig/ffmpeg.pc' \
+    sh -c 'echo "Name: FFmpeg" >> /usr/lib/pkgconfig/ffmpeg.pc' \
+    sh -c 'echo "Description: Collection of libraries and tools to process multimedia content such as audio, video, subtitles and related metadata." >> /usr/lib/pkgconfig/ffmpeg.pc' \
+    sh -c 'echo "Version: 4.4.2" >> /usr/lib/pkgconfig/ffmpeg.pc' \
+    sh -c 'echo "Libs: -L\${libdir} -lavcodec -lavformat -lavutil -lswscale" >> /usr/lib/pkgconfig/ffmpeg.pc' \
+    sh -c 'echo "Cflags: -I\${includedir}" >> /usr/lib/pkgconfig/ffmpeg.pc' 
+RUN apt-get install -y build-essential git cmake libavcodec-dev libavformat-dev libswscale-dev libavutil-dev ffmpeg pkg-config \ 
+    pkg-config --modversion ffmpeg \
+    export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
 ARG KODI_BRANCH="master"
 
 RUN cd /tmp \
@@ -139,6 +157,9 @@ RUN mkdir -p /tmp/xbmc/build \
     -DENABLE_INTERNAL_KISSFFT=OFF \
     -DENABLE_INTERNAL_RapidJSON=OFF \
     -DENABLE_EVENTCLIENTS=OFF \
+    -DENABLE_INTERNAL_FFMPEGG=OFF \
+    -DFFMPEG_LIB_DIR=/usr/local/lib \
+    -DFFMPEG_INCLUDE_DIR=/usr/local/include \
     -DENABLE_GLX=ON \
     -DENABLE_LCMS2=OFF \
     -DENABLE_LIBUSB=OFF \
