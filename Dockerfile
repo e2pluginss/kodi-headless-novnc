@@ -1,11 +1,15 @@
 ARG BASE_IMAGE="ubuntu:22.04"
-ARG EASY_NOVNC_IMAGE="fhriley/easy-novnc:1.3.0"
+ARG EASY_NOVNC_IMAGE="e2pluginss/easy-novnc:1.3.0"
 
 FROM $EASY_NOVNC_IMAGE as easy-novnc
 FROM $BASE_IMAGE as build
-FROM linuxserver/ffmpeg
-ARG DEBIAN_FRONTEND="noninteractive"
 
+ARG DEBIAN_FRONTEND="noninteractive"
+RUN apt-get update -y && apt-get install software-properties-common -y &&  add-apt-repository universe -y && add-apt-repository multiverse -y && add-apt-repository ppa:team-xbmc/ppa -y
+RUN apt-get install -y build-essential cmake libboost-all-dev pkg-config ninja-build doxygen graphviz curl wget nasm libunistring-dev git
+RUN sh -c 'echo "deb https://ppa.launchpadcontent.net/team-xbmc/ppa/ubuntu/ jammy main" > /etc/apt/sources.list.d/team-xbmc-ubuntu-ppa-jammy.list'
+RUN sh -c 'echo "deb-src https://ppa.launchpadcontent.net/team-xbmc/ppa/ubuntu/ jammy main" > /etc/apt/sources.list.d/team-xbmc-ubuntu-ppa-jammy.list'
+RUN apt-get update -y && apt-get build-dep -y kodi
 RUN apt-get update -y \
   && apt purge kodi* \
   && apt-get update -y \
@@ -107,65 +111,18 @@ RUN apt-get update -y \
     zip \
     zlib1g-dev \
   && rm -rf /var/lib/apt/lists
-RUN  apt-get install -y build-essential git-core pkg-config libtool autoconf automake cmake libfreetype6-dev libxml2-dev libssl-dev libcurl4-openssl-dev libjpeg-dev libpng-dev libmysqlclient-dev libogg-dev libvorbis-dev libsqlite3-dev libtag1-dev libcdio-dev libsdl2-dev libyajl-dev libmicrohttpd-dev libgif-dev libplist-dev libusb-dev libid3tag0-dev libflac-dev libmpeg2-4-dev libass-dev libmodplug-dev libdvdnav-dev libdvdread-dev libbluray-dev libdca-dev liblzo2-dev libpcre3-dev libboost-dev libcec-dev libcrossguid-dev
-RUN cd /usr/src && \
-    && git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg \
-    && cd ffmpeg \
-    && ./configure --enable-shared --disable-static --prefix=/usr/ \
-    && make -j$(nproc) \
-    && make install \
-    && sh -c 'echo "prefix=/usr" > /usr/lib/pkgconfig/ffmpeg.pc' \
-    && sh -c 'echo "libdir=\${prefix}/lib" >> /usr/lib/pkgconfig/ffmpeg.pc' \
-    && sh -c 'echo "includedir=\${prefix}/include" >> /usr/lib/pkgconfig/ffmpeg.pc' \
-    && sh -c 'echo "" >> /usr/lib/pkgconfig/ffmpeg.pc' \
-    && sh -c 'echo "Name: FFmpeg" >> /usr/lib/pkgconfig/ffmpeg.pc' \
-    && sh -c 'echo "Description: Collection of libraries and tools to process multimedia content such as audio, video, subtitles and related metadata." >> /usr/lib/pkgconfig/ffmpeg.pc' \
-    && sh -c 'echo "Version: 4.4.2" >> /usr/lib/pkgconfig/ffmpeg.pc' \
-    && sh -c 'echo "Libs: -L\${libdir} -lavcodec -lavformat -lavutil -lswscale" >> /usr/lib/pkgconfig/ffmpeg.pc' \
-    && sh -c 'echo "Cflags: -I\${includedir}" >> /usr/lib/pkgconfig/ffmpeg.pc' 
-RUN apt-get install -y build-essential git cmake libavcodec-dev libavformat-dev libswscale-dev libavutil-dev ffmpeg pkg-config \ 
-    && pkg-config --modversion ffmpeg \
-    && export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
+
 ARG KODI_BRANCH="master"
-apt-get install -y build-essential cmake libboost-all-dev pkg-config ninja-build doxygen graphviz curl wget nasm libunistring-dev git
-sh -c 'echo "deb https://ppa.launchpadcontent.net/team-xbmc/ppa/ubuntu/ jammy main" > /etc/apt/sources.list.d/team-xbmc-ubuntu-ppa-jammy.list'
-sh -c 'echo "deb-src https://ppa.launchpadcontent.net/team-xbmc/ppa/ubuntu/ jammy main" > /etc/apt/sources.list.d/team-xbmc-ubuntu-ppa-jammy.list'
-apt-get build-dep -y kodi
+
 RUN cd /tmp \
- && git clone --depth=1 --branch ${KODI_BRANCH} https://github.com/e2pluginss/xbmc.git
+ && git clone --depth=1 --branch ${KODI_BRANCH} https://github.com/xbmc/xbmc.git
+
 ARG CFLAGS=
-ARG CXXFLAGS=-I/usr/include/postgresql
+ARG CXXFLAGS=
 ARG WITH_CPU=
- apt-get install software-properties-common -y
- add-apt-repository universe -y
- add-apt-repository multiverse -y
- add-apt-repository ppa:team-xbmc/ppa -y
- cd /tmp/xbmc
- export TOOLCHAIN_ROOT=/usr
- make -C tools/depends/target/flatbuffers PREFIX=/usr/local
- apt-get install -y gcc-arm-linux-gnueabi libwayland-client++0 wayland-scanner++ gtk-doc-tools
-./configure --with-toolchain=/usr --prefix=/opt/xbmc-deps --host=x86_64-linux-gnu --with-rendersystem=gl
 
-sed -i 's/x86_64-linux-gnu-native\///g' /tmp/xbmc/tools/depends/Makefile.include
-sed -i 's/x86_64-linux-gnu-debug\///g' /tmp/xbmc/tools/depends/Makefile.include
-export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
-sed -i 's#CMAKE=/opt/xbmc-deps/bin/cmake -DCMAKE_TOOLCHAIN_FILE=$(PREFIX)/share/Toolchain.cmake -DCMAKE_INSTALL_PREFIX=$(PREFIX)#CMAKE=/usr/bin/cmake#g' file.txt
-
-make -C tools/depends/target/gnutls  PREFIX=/usr/local
-make -C tools/depends/target/ffmpeg  PREFIX=/usr/local
-make -C tools/depends/target/wayland-protocols PREFIX=/usr/local
-make -C tools/depends/target/fmt PREFIX=/usr/local
-make -C tools/depends/target/spdlog/ PREFIX=/usr/local
-make -C tools/depends/target/waylandpp PREFIX=/usr/local
-sed
-/tmp/xbmc/tools/depends/target/wayland-protocols/Makefile
-56c99b1534ca12e094c0ba1a7d38e7551d38dd7dea80d1a35ae4cd60e8b28ddbd8f00374394da871bbfc91aa3a42f77ebed7d62a8fe6165684a385f2028a1bf4
-291a3226cc538de3b81bdffa5de513b305a946bfc3481e21c254fcc6a023e0cf2ff1869509c7ae193da02460f1d4a3c5cd5f1ca13b2550886acffcc636fb30d2
--xf
--xJf 
 RUN mkdir -p /tmp/xbmc/build \
   && cd /tmp/xbmc/build \
-  && export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH \
   && CFLAGS="${CFLAGS}" CXXFLAGS="${CXXFLAGS}" cmake ../. \
     ${WITH_CPU} \
     -DCMAKE_INSTALL_LIBDIR=/usr/lib \
@@ -185,8 +142,8 @@ RUN mkdir -p /tmp/xbmc/build \
     -DENABLE_INTERNAL_CROSSGUID=OFF \
     -DENABLE_INTERNAL_KISSFFT=OFF \
     -DENABLE_INTERNAL_RapidJSON=OFF \
-    -DENABLE_EVENTCLIENTS=OFF \
     -DENABLE_INTERNAL_FFMPEG=ON \
+    -DENABLE_EVENTCLIENTS=OFF \
     -DENABLE_GLX=ON \
     -DENABLE_LCMS2=OFF \
     -DENABLE_LIBUSB=OFF \
@@ -206,11 +163,11 @@ RUN mkdir -p /tmp/xbmc/build \
 ARG PYTHON_VERSION=3.10
 
 RUN install -Dm755 \
-	/tmp/xbmc/tools/EventClients/Clients/KodiSend/kodi-send.py \
-	/tmp/kodi-build/usr/bin/kodi-send \
+        /tmp/xbmc/tools/EventClients/Clients/KodiSend/kodi-send.py \
+        /tmp/kodi-build/usr/bin/kodi-send \
  && install -Dm644 \
-	/tmp/xbmc/tools/EventClients/lib/python/xbmcclient.py \
-	/tmp/kodi-build/usr/lib/python${PYTHON_VERSION}/xbmcclient.py
+        /tmp/xbmc/tools/EventClients/lib/python/xbmcclient.py \
+        /tmp/kodi-build/usr/lib/python${PYTHON_VERSION}/xbmcclient.py
 
 
 FROM $BASE_IMAGE
@@ -306,4 +263,3 @@ HEALTHCHECK --start-period=5s --interval=30s --retries=1 --timeout=5s \
   CMD /usr/bin/supervisorctl status all >/dev/null || exit 1
 
 LABEL maintainer="fhriley+git@gmail.com"
-
