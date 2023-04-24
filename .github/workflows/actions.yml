@@ -1,6 +1,6 @@
 name: Build Images
 
-on: 
+on:  
   workflow_dispatch:
     inputs:
       version:
