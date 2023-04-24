@@ -4,8 +4,8 @@ import subprocess
 import shlex
 
 BASE_IMAGE = 'ubuntu:22.04'
-EASY_NOVNC_IMAGE = 'fhriley/easy-novnc:1.3.0'
-IMAGE_NAME = 'fhriley/kodi-headless-novnc'
+EASY_NOVNC_IMAGE = 'e2pluginss/easy-novnc:1.3.0'
+IMAGE_NAME = 'e2pluginss/kodi-headless-novnc'
 PLATFORMS = ['linux/amd64', 'linux/arm64', 'linux/arm/v7']
 CACHE = f'type=registry,ref={IMAGE_NAME}:'
 BUILDX = 'docker buildx build {build_args} --platform {platforms} {tags} --cache-to type=inline,mode=max {push} {load} {no_cache} .'
