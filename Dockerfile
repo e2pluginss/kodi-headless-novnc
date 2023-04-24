@@ -127,12 +127,14 @@ RUN apt-get install -y build-essential git cmake libavcodec-dev libavformat-dev 
     && pkg-config --modversion ffmpeg \
     && export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
 ARG KODI_BRANCH="master"
-
+apt-get install -y build-essential cmake libboost-all-dev pkg-config ninja-build doxygen graphviz curl wget nasm libunistring-dev git
+sh -c 'echo "deb https://ppa.launchpadcontent.net/team-xbmc/ppa/ubuntu/ jammy main" > /etc/apt/sources.list.d/team-xbmc-ubuntu-ppa-jammy.list'
+sh -c 'echo "deb-src https://ppa.launchpadcontent.net/team-xbmc/ppa/ubuntu/ jammy main" > /etc/apt/sources.list.d/team-xbmc-ubuntu-ppa-jammy.list'
+apt-get build-dep -y kodi
 RUN cd /tmp \
  && git clone --depth=1 --branch ${KODI_BRANCH} https://github.com/e2pluginss/xbmc.git
-
 ARG CFLAGS=
-ARG CXXFLAGS=
+ARG CXXFLAGS=-I/usr/include/postgresql
 ARG WITH_CPU=
  apt-get install software-properties-common -y
  add-apt-repository universe -y
@@ -141,26 +143,22 @@ ARG WITH_CPU=
  cd /tmp/xbmc
  export TOOLCHAIN_ROOT=/usr
  make -C tools/depends/target/flatbuffers PREFIX=/usr/local
- apt-get install gcc-arm-linux-gnueabi libwayland-client++0 wayland-scanner++
+ apt-get install -y gcc-arm-linux-gnueabi libwayland-client++0 wayland-scanner++ gtk-doc-tools
 ./configure --with-toolchain=/usr --prefix=/opt/xbmc-deps --host=x86_64-linux-gnu --with-rendersystem=gl
-Makefile.include
-PREFIX=/usr/x86_64-linux-gnu-debug
-NATIVEPREFIX=/usr/x86_64-linux-gnu-native
-PREFIX=/usr/local
-NATIVEPREFIX=/usr/local
-sed -i 's/x86_64-linux-gnu-native\///g' Makefile.include
-sed -i 's/x86_64-linux-gnu-debug\///g' Makefile.include
-/tmp/xbmc/tools/depends/configure --prefix=/usr/local --with-rendersystem=gl
+
+sed -i 's/x86_64-linux-gnu-native\///g' /tmp/xbmc/tools/depends/Makefile.include
+sed -i 's/x86_64-linux-gnu-debug\///g' /tmp/xbmc/tools/depends/Makefile.include
+export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
+sed -i 's#CMAKE=/opt/xbmc-deps/bin/cmake -DCMAKE_TOOLCHAIN_FILE=$(PREFIX)/share/Toolchain.cmake -DCMAKE_INSTALL_PREFIX=$(PREFIX)#CMAKE=/usr/bin/cmake#g' file.txt
+
+make -C tools/depends/target/gnutls  PREFIX=/usr/local
+make -C tools/depends/target/ffmpeg  PREFIX=/usr/local
 make -C tools/depends/target/wayland-protocols PREFIX=/usr/local
 make -C tools/depends/target/fmt PREFIX=/usr/local
 make -C tools/depends/target/spdlog/ PREFIX=/usr/local
 make -C tools/depends/target/waylandpp PREFIX=/usr/local
 sed
 /tmp/xbmc/tools/depends/target/wayland-protocols/Makefile
-Makefile.include
-Makefile.include.in
-download-files.include
-download-files.include.in
 56c99b1534ca12e094c0ba1a7d38e7551d38dd7dea80d1a35ae4cd60e8b28ddbd8f00374394da871bbfc91aa3a42f77ebed7d62a8fe6165684a385f2028a1bf4
 291a3226cc538de3b81bdffa5de513b305a946bfc3481e21c254fcc6a023e0cf2ff1869509c7ae193da02460f1d4a3c5cd5f1ca13b2550886acffcc636fb30d2
 -xf
@@ -188,9 +186,7 @@ RUN mkdir -p /tmp/xbmc/build \
     -DENABLE_INTERNAL_KISSFFT=OFF \
     -DENABLE_INTERNAL_RapidJSON=OFF \
     -DENABLE_EVENTCLIENTS=OFF \
-    -DENABLE_INTERNAL_FFMPEGG=OFF \
-    -DFFMPEG_LIB_DIR=/usr/local/lib \
-    -DFFMPEG_INCLUDE_DIR=/usr/local/include \
+    -DENABLE_INTERNAL_FFMPEG=ON \
     -DENABLE_GLX=ON \
     -DENABLE_LCMS2=OFF \
     -DENABLE_LIBUSB=OFF \
