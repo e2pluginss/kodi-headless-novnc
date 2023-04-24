@@ -19,6 +19,7 @@ be updated to any new versions of Kodi.
 
 ## Usage
 apt install tigervnc-tools
+vncpasswd
 ```bash
 docker run --name=kodi-headless-novnc \
   -d --init \
