@@ -74,7 +74,7 @@ jobs:
     needs: [combine]
     runs-on: ubuntu-22.04
     container:
-      image: fhriley/kodi-headless-novnc:${{ github.event.inputs.version }}
+      image: e2pluginss/kodi-headless-novnc:${{ github.event.inputs.version }}
     steps:
       -
         name: Check Missing Libraries
