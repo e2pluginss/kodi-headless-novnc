@@ -66,8 +66,8 @@ jobs:
         name: Create and push manifest images
         uses: Noelware/docker-manifest-action@master
         with:
-          base-image: fhriley/kodi-headless-novnc:${{ github.event.inputs.version }}, fhriley/kodi-headless-novnc:${{ github.event.inputs.codename }}${{ (github.event.inputs.tag_latest == 'true' && ', fhriley/kodi-headless-novnc:latest') || '' }}
-          extra-images: fhriley/kodi-headless-novnc:${{ github.event.inputs.version }}-amd64,fhriley/kodi-headless-novnc:${{ github.event.inputs.version }}-arm64,fhriley/kodi-headless-novnc:${{ github.event.inputs.version }}-arm32
+          base-image: e2pluginss/kodi-headless-novnc:${{ github.event.inputs.version }}, e2pluginss/kodi-headless-novnc:${{ github.event.inputs.codename }}${{ (github.event.inputs.tag_latest == 'true' && ', e2pluginss/kodi-headless-novnc:latest') || '' }}
+          extra-images: e2pluginss/kodi-headless-novnc:${{ github.event.inputs.version }}-amd64,e2pluginss/kodi-headless-novnc:${{ github.event.inputs.version }}-arm64,e2pluginss/kodi-headless-novnc:${{ github.event.inputs.version }}-arm32
           push: true
 
   test:
