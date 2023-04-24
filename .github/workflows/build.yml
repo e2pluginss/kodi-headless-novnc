@@ -1,6 +1,6 @@
 name: Reusable build workflow
 
-on: 
+on:  
   workflow_call:
     inputs:
       runs_on:
