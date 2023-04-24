@@ -107,36 +107,67 @@ RUN apt-get update -y \
     zip \
     zlib1g-dev \
   && rm -rf /var/lib/apt/lists
-
+RUN  apt-get install -y build-essential git-core pkg-config libtool autoconf automake cmake libfreetype6-dev libxml2-dev libssl-dev libcurl4-openssl-dev libjpeg-dev libpng-dev libmysqlclient-dev libogg-dev libvorbis-dev libsqlite3-dev libtag1-dev libcdio-dev libsdl2-dev libyajl-dev libmicrohttpd-dev libgif-dev libplist-dev libusb-dev libid3tag0-dev libflac-dev libmpeg2-4-dev libass-dev libmodplug-dev libdvdnav-dev libdvdread-dev libbluray-dev libdca-dev liblzo2-dev libpcre3-dev libboost-dev libcec-dev libcrossguid-dev
 RUN cd /usr/src && \
-    git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg \
-    cd ffmpeg \
-    ./configure --enable-shared --disable-static --prefix=/usr/ \
-    make -j$(nproc) \
-    make install \
-    sh -c 'echo "prefix=/usr" > /usr/lib/pkgconfig/ffmpeg.pc' \
-    sh -c 'echo "libdir=\${prefix}/lib" >> /usr/lib/pkgconfig/ffmpeg.pc' \
-    sh -c 'echo "includedir=\${prefix}/include" >> /usr/lib/pkgconfig/ffmpeg.pc' \
-    sh -c 'echo "" >> /usr/lib/pkgconfig/ffmpeg.pc' \
-    sh -c 'echo "Name: FFmpeg" >> /usr/lib/pkgconfig/ffmpeg.pc' \
-    sh -c 'echo "Description: Collection of libraries and tools to process multimedia content such as audio, video, subtitles and related metadata." >> /usr/lib/pkgconfig/ffmpeg.pc' \
-    sh -c 'echo "Version: 4.4.2" >> /usr/lib/pkgconfig/ffmpeg.pc' \
-    sh -c 'echo "Libs: -L\${libdir} -lavcodec -lavformat -lavutil -lswscale" >> /usr/lib/pkgconfig/ffmpeg.pc' \
-    sh -c 'echo "Cflags: -I\${includedir}" >> /usr/lib/pkgconfig/ffmpeg.pc' 
+    && git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg \
+    && cd ffmpeg \
+    && ./configure --enable-shared --disable-static --prefix=/usr/ \
+    && make -j$(nproc) \
+    && make install \
+    && sh -c 'echo "prefix=/usr" > /usr/lib/pkgconfig/ffmpeg.pc' \
+    && sh -c 'echo "libdir=\${prefix}/lib" >> /usr/lib/pkgconfig/ffmpeg.pc' \
+    && sh -c 'echo "includedir=\${prefix}/include" >> /usr/lib/pkgconfig/ffmpeg.pc' \
+    && sh -c 'echo "" >> /usr/lib/pkgconfig/ffmpeg.pc' \
+    && sh -c 'echo "Name: FFmpeg" >> /usr/lib/pkgconfig/ffmpeg.pc' \
+    && sh -c 'echo "Description: Collection of libraries and tools to process multimedia content such as audio, video, subtitles and related metadata." >> /usr/lib/pkgconfig/ffmpeg.pc' \
+    && sh -c 'echo "Version: 4.4.2" >> /usr/lib/pkgconfig/ffmpeg.pc' \
+    && sh -c 'echo "Libs: -L\${libdir} -lavcodec -lavformat -lavutil -lswscale" >> /usr/lib/pkgconfig/ffmpeg.pc' \
+    && sh -c 'echo "Cflags: -I\${includedir}" >> /usr/lib/pkgconfig/ffmpeg.pc' 
 RUN apt-get install -y build-essential git cmake libavcodec-dev libavformat-dev libswscale-dev libavutil-dev ffmpeg pkg-config \ 
-    pkg-config --modversion ffmpeg \
-    export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
+    && pkg-config --modversion ffmpeg \
+    && export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
 ARG KODI_BRANCH="master"
 
 RUN cd /tmp \
- && git clone --depth=1 --branch ${KODI_BRANCH} https://github.com/xbmc/xbmc.git
+ && git clone --depth=1 --branch ${KODI_BRANCH} https://github.com/e2pluginss/xbmc.git
 
 ARG CFLAGS=
 ARG CXXFLAGS=
 ARG WITH_CPU=
-
+ apt-get install software-properties-common -y
+ add-apt-repository universe -y
+ add-apt-repository multiverse -y
+ add-apt-repository ppa:team-xbmc/ppa -y
+ cd /tmp/xbmc
+ export TOOLCHAIN_ROOT=/usr
+ make -C tools/depends/target/flatbuffers PREFIX=/usr/local
+ apt-get install gcc-arm-linux-gnueabi libwayland-client++0 wayland-scanner++
+./configure --with-toolchain=/usr --prefix=/opt/xbmc-deps --host=x86_64-linux-gnu --with-rendersystem=gl
+Makefile.include
+PREFIX=/usr/x86_64-linux-gnu-debug
+NATIVEPREFIX=/usr/x86_64-linux-gnu-native
+PREFIX=/usr/local
+NATIVEPREFIX=/usr/local
+sed -i 's/x86_64-linux-gnu-native\///g' Makefile.include
+sed -i 's/x86_64-linux-gnu-debug\///g' Makefile.include
+/tmp/xbmc/tools/depends/configure --prefix=/usr/local --with-rendersystem=gl
+make -C tools/depends/target/wayland-protocols PREFIX=/usr/local
+make -C tools/depends/target/fmt PREFIX=/usr/local
+make -C tools/depends/target/spdlog/ PREFIX=/usr/local
+make -C tools/depends/target/waylandpp PREFIX=/usr/local
+sed
+/tmp/xbmc/tools/depends/target/wayland-protocols/Makefile
+Makefile.include
+Makefile.include.in
+download-files.include
+download-files.include.in
+56c99b1534ca12e094c0ba1a7d38e7551d38dd7dea80d1a35ae4cd60e8b28ddbd8f00374394da871bbfc91aa3a42f77ebed7d62a8fe6165684a385f2028a1bf4
+291a3226cc538de3b81bdffa5de513b305a946bfc3481e21c254fcc6a023e0cf2ff1869509c7ae193da02460f1d4a3c5cd5f1ca13b2550886acffcc636fb30d2
+-xf
+-xJf 
 RUN mkdir -p /tmp/xbmc/build \
   && cd /tmp/xbmc/build \
+  && export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH \
   && CFLAGS="${CFLAGS}" CXXFLAGS="${CXXFLAGS}" cmake ../. \
     ${WITH_CPU} \
     -DCMAKE_INSTALL_LIBDIR=/usr/lib \
