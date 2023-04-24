@@ -18,11 +18,12 @@ second "real" Kodi running to configure everything.
 be updated to any new versions of Kodi.
 
 ## Usage
-
+apt install tigervnc-tools
 ```bash
 docker run --name=kodi-headless-novnc \
   -d --init \
   -v <MY_DATA_PATH>:/data \
+  -v /root/.vnc/passwd:/root/.vnc/passwd \
   -e KODI_DB_HOST=<MY_KODI_DBHOST> \
   -e KODI_DB_USER=<MY_KODI_DBUSER> \
   -e KODI_DB_PASS=<MY_KODI_DBPASS> \
